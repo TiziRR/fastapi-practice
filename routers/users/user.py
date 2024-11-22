@@ -1,20 +1,8 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
+from .models.user_model import User
+from .users import users_list
 
-### Para correr en la terminal -> uvicorn users:app --reload
-
-app = FastAPI()
-
-## Entidad user
-class User(BaseModel):
-    id: int
-    name: str
-    surname: str
-    age: int
-
-users_list = [User(id=1, name="Tiziano", surname="Rossi", age=20),
-            User(id=2, name="Facha", surname="Pipa", age=20),
-            User(id=3, name="Te", surname="Puse", age=20)]
+router = APIRouter(prefix="/user", tags=["user"], responses={404:{"message": "Usuario no encontrado"}})
 
 def search_users(id_func: int):
     users = filter(lambda user: user.id == id_func, users_list)
@@ -23,24 +11,29 @@ def search_users(id_func: int):
     except:
         return {"error": "No se ha encontrado el usuario"}
 
+# GET
+# Path -> Condicion Obligatoria
+@router.get("/{id}")
+async def user(id: int):
+    return search_users(id)
 
-# CRUD
+# Query -> Condicion Opcional
+@router.get("/")
+async def user(id: int):
+    return search_users(id)
 
-## GET todos los usuarios
-@app.get("/users")
-async def users():
-    return users_list
 
-# POST user
-@app.post("/user/")
+# POST
+@router.post("/", response_model=User, status_code=201)
 async def user(user: User):
     if type(search_users(user.id)) == User:
-        return {"error": "El usuario ya existe"}
+        raise HTTPException(status_code=404, detail="El usuario ya existe")
     users_list.append(user)
     return user
 
-# PUT user
-@app.put("/user/")
+
+# PUT
+@router.put("/")
 async def user(user: User):
     found = False
     for index, usuario_guardado in enumerate(users_list):
@@ -51,8 +44,9 @@ async def user(user: User):
         return {"error": "El usuario no existe"}
     return user
 
-# DELETE user
-@app.delete("/user/{id}")
+
+# DELETE
+@router.delete("/{id}")
 async def user(id: int):
     found = False
     for index, usuario_guardado in enumerate(users_list):
@@ -63,13 +57,3 @@ async def user(id: int):
     if not found:
         return {"error": "El usuario no existe"}
     return {"Usuario": "Eliminado con éxito"}
-
-# Path -> Condicion Obligatoria
-@app.get("/user/{id}")
-async def user(id: int):
-    return search_users(id)
-
-# Query -> Condicion Opcional
-@app.get("/user/")
-async def user(id: int):
-    return search_users(id)

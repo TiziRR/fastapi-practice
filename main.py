@@ -1,9 +1,15 @@
 ### pip install "fastapi[all]"
-from fastapi import FastAPI
-
 ### Para correr en la terminal -> uvicorn main:app --reload
+from fastapi import FastAPI
+from routers import products
+from routers.users import users, user
 
 app = FastAPI()
+
+# Routes
+app.include_router(products.router)
+app.include_router(users.router)
+app.include_router(user.router)
 
 @app.get("/")
 async def root():
